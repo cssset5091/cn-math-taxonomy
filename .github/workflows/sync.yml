@@ -2,7 +2,8 @@ name: Sync from upstream
 
 on:
   schedule:
-    - cron: '23 * * * *'
+    # 北京时间每周二凌晨 4:00（UTC 周一 20:00）
+    - cron: '0 20 * * 1'
   workflow_dispatch:
 
 permissions:
