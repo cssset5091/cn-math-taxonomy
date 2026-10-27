@@ -203,6 +203,13 @@ table.log select { min-height: 44px; }
   #path-cy { height: 380px; }
 }
 
+/* 多选单元 */
+.multi-bar { position: sticky; top: 0; z-index: 10; background: var(--bg-elev); padding: 8px; border-bottom: 1px solid var(--line); margin: 0 0 8px; border-radius: 8px; }
+.multi-bar .multi-count { font-weight: 700; }
+.chap-check { display: flex; align-items: center; gap: 8px; flex: 1 1 160px; min-width: 0; cursor: pointer; }
+.chap-check input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--brand); flex: 0 0 auto; margin: 0; }
+.multi-actions { gap: 10px; }
+
 @media print {
   body { background: #fff; }
   .no-print { display: none !important; }
