@@ -37,6 +37,7 @@
   let startQuery = '';
   let startStage = '';
   let chapterOpen = false;
+  let selChapters = {};   // 多选单元：{chapterKey: {label, ids}}
   let gradeSel = '七';     // 开始页「按年级整体诊断」：年级
   let volSel = '';         // '' 整年级 / '上' / '下'
   let seedParam = null;    // URL 参数 seed：固定选题的随机种子
@@ -437,9 +438,11 @@
       setSetting('limit', v);
     });
     const listBox = h('div', { id: 'target-list' });
+    const multiBar = h('div', { id: 'multi-bar', class: 'multi-bar' });
     const browser = h('details', { class: 'chapter-browser', id: 'chapter-browser', open: chapterOpen || !!startQuery },
       h('summary', null, '按册、章浏览'),
-      h('p', { class: 'muted small', text: '列表按年级、册、章折叠。想直接开始，用上面的搜索更快。' }),
+      h('p', { class: 'muted small', text: '列表按年级、册、章折叠。勾选多个单元可合并成一次诊断；想直接开始，用上面的搜索更快。' }),
+      multiBar,
       listBox);
     browser.addEventListener('toggle', function () { chapterOpen = browser.open; });
     page.append(h('div', { class: 'card' },
@@ -587,12 +590,22 @@
         h('summary', null, vv[1] + '（' + count + ' 个知识点）'));
       chapters.forEach(function (c) {
         const ch = c.ch;
+        const chKey = ch.key;
+        const chLabel = ch.volume + ' ' + ch.label;
+        const chIds = ch.topics.map(function (x) { return x.t.id; });
+        const chCb = h('input', { type: 'checkbox', 'aria-label': '勾选单元 ' + chLabel });
+        chCb.checked = !!selChapters[chKey];
+        chCb.addEventListener('change', function () {
+          if (chCb.checked) selChapters[chKey] = { label: chLabel, ids: chIds };
+          else delete selChapters[chKey];
+          updateMultiSelectBar();
+        });
         det.append(h('div', { class: 'chap' },
           h('div', { class: 'chap-head' },
-            h('span', { class: 't', text: ch.label }),
+            h('label', { class: 'chap-check' }, chCb, h('span', { class: 't', text: ch.label })),
             h('button', {
               class: 'primary', title: '把本章全部 ' + ch.topics.length + ' 个知识点一起作为目标',
-              onclick: function () { startSession(ch.topics.map(function (x) { return x.t.id; }), ch.volume + ' ' + ch.label + '（整章）'); }
+              onclick: function () { startSession(ch.topics.map(function (x) { return x.t.id; }), chLabel + '（整章）'); }
             }, '以整章为目标')),
           c.rows.map(function (x) {
             return h('div', { class: 'topic-row', title: x.t.description },
@@ -608,6 +621,25 @@
     if (mc) mc.textContent = (q ? '找到 ' : '册章列表里有 ') + shown + ' 个知识点';
     const browser = document.getElementById('chapter-browser');
     if (browser && q) browser.open = true;
+    updateMultiSelectBar();
+  }
+
+  function updateMultiSelectBar() {
+    const bar = document.getElementById('multi-bar');
+    if (!bar) return;
+    while (bar.firstChild) bar.removeChild(bar.firstChild);
+    const entries = Object.keys(selChapters).map(function (k) { return selChapters[k]; }).filter(Boolean);
+    if (!entries.length) {
+      bar.append(h('p', { class: 'muted small', text: '勾选下方多个单元，可把它们合并成一次诊断。' }));
+      return;
+    }
+    const ids = [];
+    const labels = [];
+    entries.forEach(function (e) { e.ids.forEach(function (id) { ids.push(id); }); labels.push(e.label); });
+    bar.append(h('div', { class: 'row multi-actions' },
+      h('span', { class: 'multi-count', text: labels.join('、') + '（已选 ' + entries.length + ' 个单元，共 ' + ids.length + ' 个知识点）' }),
+      h('button', { class: 'primary', onclick: function () { startSession(ids, labels.join('、') + '（已选 ' + entries.length + ' 个单元）'); } }, '开始已选单元诊断'),
+      h('button', { onclick: function () { selChapters = {}; fillList(document.getElementById('target-list')); } }, '清空')));
   }
 
   /* ------------------------------------------------------------ 出题页 */
